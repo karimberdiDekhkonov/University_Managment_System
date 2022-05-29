@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import uz.pdp.appjparelationships.entity.Address;
 import uz.pdp.appjparelationships.entity.Group;
@@ -12,6 +13,8 @@ import uz.pdp.appjparelationships.entity.Subject;
 import uz.pdp.appjparelationships.payload.StudentDto;
 import uz.pdp.appjparelationships.repository.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -27,7 +30,7 @@ public class StudentController {
     StudentRepository studentRepository;
 
 
-    //1. VAZIRLIK
+    //1. MINISTRY
     @GetMapping("/forMinistry")
     public Page<Student> getStudentListForMinistry(@RequestParam int page) {
         //1-1=0     2-1=1    3-1=2    4-1=3
@@ -39,7 +42,6 @@ public class StudentController {
         Page<Student> studentPage = studentRepository.findAll(pageable);
         return studentPage;
     }
-
 
     //2. UNIVERSITY
     @GetMapping("/forUniversity/{universityId}")
@@ -57,8 +59,8 @@ public class StudentController {
 
     //3. FACULTY DEKANAT
     @GetMapping("/forFaculty/{facultyId}")
-    public Page<Student> getStudentListByFacultyId(@PathVariable Integer facultyId, @RequestParam int page){
-        Pageable pageable = PageRequest.of(page,10);
+    public Page<Student> getStudentListByFacultyId(@PathVariable Integer facultyId, @RequestParam int page) {
+        Pageable pageable = PageRequest.of(page, 10);
         Page<Student> group_facultyId = studentRepository.findAllByGroup_FacultyId(facultyId, pageable);
         return group_facultyId;
     }
@@ -67,67 +69,81 @@ public class StudentController {
     //4. GROUP OWNER
     @GetMapping("/forGroup/{groupId}")
     public Page<Student> getStudentListByGroupId(@PathVariable Integer groupId,
-                                                 @RequestParam int page){
-        Pageable pageable = PageRequest.of(page,10);
+                                                 @RequestParam int page) {
+        Pageable pageable = PageRequest.of(page, 10);
         Page<Student> allByGroupId = studentRepository.findAllByGroupId(groupId, pageable);
         return allByGroupId;
     }
-
+    //EDIT STUDENT
     @PutMapping
-    public String editStudent(@PathVariable Integer id,@RequestBody StudentDto studentDto){
-        Optional<Student> studentOptional = studentRepository.findById(id);
-        if (studentOptional.isPresent()){
-            Optional<Address> addressOptional = addressRepository.findById(studentDto.getAddressId());
-            if (addressOptional.isPresent()){
-                Optional<Group> groupOptional = groupRepository.findById(studentDto.getGroupId());
-                if (groupOptional.isPresent()){
-                    Optional<Subject> subjectOptional = subjectRepository.findById(studentDto.getSubjectId());
-                    if (subjectOptional.isPresent()){
-                        Student student = studentOptional.get();
-                        student.setFirstName(studentDto.getFirstName());
-                        student.setLastName(studentDto.getLastName());
-                        student.setAddress(addressOptional.get());
-                        student.setGroup(groupOptional.get());
-                        student.setSubjects(subjectOptional.get());
-                        studentRepository.save(student);
-                        return "Student saved";
-                    }else return "Subject id is not found";
-                }else return "Group id is not found";
-            }else return "Address id is not found";
-        }else return "Student id is not found";
-
-    }
-
-
-    @PostMapping
-    public String addStudent(@RequestBody StudentDto studentDto){
+    public String editStudent(@PathVariable Integer id, @RequestBody StudentDto studentDto) {
         Optional<Address> addressOptional = addressRepository.findById(studentDto.getAddressId());
-        if (addressOptional.isPresent()){
-            Optional<Group> groupOptional = groupRepository.findById(studentDto.getGroupId());
-            if (groupOptional.isPresent()){
-                Optional<Subject> subjectOptional = subjectRepository.findById(studentDto.getSubjectId());
-                if (subjectOptional.isPresent()){
-                    Student student = new Student();
-                    student.setFirstName(studentDto.getFirstName());
-                    student.setLastName(studentDto.getLastName());
-                    student.setAddress(addressOptional.get());
-                    student.setGroup(groupOptional.get());
-                    student.setSubjects(subjectOptional.get());
-                    studentRepository.save(student);
-                    return "Student saved";
-                }else return "Subject id is not found";
-            }else return "Group id is not found";
-        }else return "Address id is not found";
+        if (!addressOptional.isPresent()) {
+            return "Address id is not found";
+        }
+
+        Optional<Group> groupOptional = groupRepository.findById(studentDto.getGroupId());
+        if (!groupOptional.isPresent()) {
+            return "Group id is not found";
+        }
+
+        Optional<Student> optionalStudent = studentRepository.findById(id);
+
+        if (!optionalStudent.isPresent()){
+            return "Student not found";
+        }
+
+        Student student = optionalStudent.get();
+        List<Subject> list = new ArrayList<>();
+        for (int i : StudentDto.subjectId) {
+            Optional<Subject> optional = subjectRepository.findById(i);
+            optional.ifPresent(list::add);
+        }
+        student.setFirstName(studentDto.getFirstName());
+        student.setLastName(studentDto.getLastName());
+        student.setAddress(addressOptional.get());
+        student.setGroup(groupOptional.get());
+        student.setSubjects(list);
+        studentRepository.save(student);
+        return "Student saved";
     }
 
+    //ADD STUDENT
+    @PostMapping
+    public String addStudent(@RequestBody StudentDto studentDto) {
+        Optional<Address> addressOptional = addressRepository.findById(studentDto.getAddressId());
+        if (!addressOptional.isPresent()) {
+            return "Address id is not found";
+        }
 
-    @DeleteMapping
-    public String deleteStudent(@PathVariable Integer id){
+        Optional<Group> groupOptional = groupRepository.findById(studentDto.getGroupId());
+        if (!groupOptional.isPresent()) {
+            return "Group id is not found";
+        }
+
+        Student student = new Student();
+        List<Subject> list = new ArrayList<>();
+        for (int i : StudentDto.subjectId) {
+            Optional<Subject> optional = subjectRepository.findById(i);
+            optional.ifPresent(list::add);
+        }
+        student.setFirstName(studentDto.getFirstName());
+        student.setLastName(studentDto.getLastName());
+        student.setAddress(addressOptional.get());
+        student.setGroup(groupOptional.get());
+        student.setSubjects(list);
+        studentRepository.save(student);
+        return "Student saved";
+    }
+
+    //DELETE STUDENT
+    @DeleteMapping("/{id}")
+    public String deleteStudent(@PathVariable Integer id) {
         Optional<Student> optional = studentRepository.findById(id);
-        if (optional.isPresent()){
+        if (optional.isPresent()) {
             studentRepository.delete(optional.get());
             return "Deleted";
-        }else return "Id is not found";
+        } else return "Id is not found";
     }
 
 }

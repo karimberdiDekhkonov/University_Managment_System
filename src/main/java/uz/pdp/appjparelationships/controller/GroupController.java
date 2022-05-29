@@ -1,6 +1,8 @@
 package uz.pdp.appjparelationships.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import uz.pdp.appjparelationships.entity.Faculty;
 import uz.pdp.appjparelationships.entity.Group;
@@ -20,24 +22,19 @@ public class GroupController {
     @Autowired
     FacultyRepository facultyRepository;
 
-    //VAZIRLIK UCHUN
-    //READ
-    @GetMapping
+    //READ FOR MINISTRY
+    @GetMapping("ministry")
     public List<Group> getGroups() {
-        List<Group> groups = groupRepository.findAll();
-        return groups;
+        return groupRepository.findAll();
     }
 
-
-    //UNIVERSITET MAS'UL XODIMI UCHUN
+    //READ FOR UNIVERSITY DIRECTOR
     @GetMapping("/byUniversityId/{universityId}")
     public List<Group> getGroupsByUniversityId(@PathVariable Integer universityId) {
-        List<Group> allByFaculty_universityId = groupRepository.findAllByFaculty_UniversityId(universityId);
-        List<Group> groupsByUniversityId = groupRepository.getGroupsByUniversityId(universityId);
-        List<Group> groupsByUniversityIdNative = groupRepository.getGroupsByUniversityIdNative(universityId);
-        return allByFaculty_universityId;
+        return groupRepository.findAllByFaculty_UniversityId(universityId);
     }
 
+    //ADD GROUP
     @PostMapping
     public String addGroup(@RequestBody GroupDto groupDto) {
 
@@ -55,5 +52,32 @@ public class GroupController {
         return "Group added";
     }
 
+    //EDIT GROUP
+    @PutMapping("/{id}")
+    public HttpEntity<?> editGroup(@PathVariable Integer id,@RequestBody GroupDto dto){
+        Optional<Group> optionalGroup = groupRepository.findById(id);
+        if (!optionalGroup.isPresent()){
+            return ResponseEntity.ok("Group not found");
+        }
+        Optional<Faculty> optionalFaculty = facultyRepository.findById(dto.getFacultyId());
+        if (!optionalFaculty.isPresent()){
+            return ResponseEntity.ok("Faculty not found");
+        }
+        Group group = optionalGroup.get();
+        group.setName(dto.getName());
+        group.setFaculty(optionalFaculty.get());
+        groupRepository.save(group);
+        return ResponseEntity.ok("Successfully edited");
+    }
+
+    //DELETE GROUP
+    @DeleteMapping("/{id}")
+    public HttpEntity<?> deleteGroup(@PathVariable Integer id){
+        Optional<Group> optionalGroup = groupRepository.findById(id);
+        if (optionalGroup.isPresent()){
+            groupRepository.delete(optionalGroup.get());
+            return ResponseEntity.ok("Deleted");
+        }else return ResponseEntity.ok("Not found");
+    }
 
 }

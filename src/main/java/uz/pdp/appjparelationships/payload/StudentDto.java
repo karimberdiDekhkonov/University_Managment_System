@@ -3,6 +3,8 @@ package uz.pdp.appjparelationships.payload;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Entity
@@ -17,10 +19,10 @@ public class StudentDto {
     @Column(nullable = false)
     private String lastName;
 
-    //ONE student TO ONE address*** ONE address TO ONE student
+    //ONE student TO ONE address, ONE address TO ONE student
     private int addressId;
 
     private int groupId;
 
-    private int subjectId;
+    public static int[] subjectId;
 }

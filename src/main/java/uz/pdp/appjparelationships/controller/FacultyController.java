@@ -21,14 +21,20 @@ public class FacultyController {
     UniversityRepository universityRepository;
 
 
-    //VAZIRLIK UCHUN
+    //READ FOR MINISTRY
     @GetMapping
     public List<Faculty> getFaculties() {
         return facultyRepository.findAll();
     }
 
-    //    @RequestMapping(method = RequestMethod.POST)
+    //READ FOR UNIVERSITY
+    @GetMapping("/byUniversityId/{universityId}")
+    public List<Faculty> getFacultiesByUniversityId(@PathVariable Integer universityId) {
+        List<Faculty> allByUniversityId = facultyRepository.findAllByUniversityId(universityId);
+        return allByUniversityId;
+    }
 
+    //ADD FACULTY
     @PostMapping
     public String addFaculty(@RequestBody FacultyDto facultyDto) {
         boolean exists = facultyRepository.existsByNameAndUniversityId(facultyDto.getName(), facultyDto.getUniversityId());
@@ -44,15 +50,7 @@ public class FacultyController {
         return "Faculty saved";
     }
 
-
-    //UNIVERSITET XODIMI UCHUN
-    @GetMapping("/byUniversityId/{universityId}")
-    public List<Faculty> getFacultiesByUniversityId(@PathVariable Integer universityId) {
-        List<Faculty> allByUniversityId = facultyRepository.findAllByUniversityId(universityId);
-        return allByUniversityId;
-    }
-
-
+    //DELETE FACULTY
     @DeleteMapping("/{id}")
     public String deleteFaculty(@PathVariable Integer id) {
         try {
@@ -63,7 +61,7 @@ public class FacultyController {
         }
     }
 
-
+    //EDIT FACULTY
     @PutMapping("/{id}")
     public String editFaculty(@PathVariable Integer id, @RequestBody FacultyDto facultyDto) {
         Optional<Faculty> optionalFaculty = facultyRepository.findById(id);
